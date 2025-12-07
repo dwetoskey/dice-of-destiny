@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DICE OF DESTINY – LIVE LEADERBOARD</title>
+  <style>
+    body { 
+      font-family: 'Impact', sans-serif; 
+      background: #000 url('https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExdTRld2Fnd3lqeWwyeHRrN2M3Mzdxdzl6NnFscmJ0MGJhbXk3emt2MCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/rnBIe3fiZucHHwDOCh/giphy.gif') fixed center/cover; 
+      color: gold; 
+      text-align: center; 
+      margin: 0;  
+    }
+    h1 { font-size: 5rem; text-shadow: 0 0 30px gold; margin: 20px; }
+    .live { font-size: 3rem; color: #ff0066; animation: glow 2s infinite alternate; margin-bottom: 30px; }
+    @keyframes glow { from {text-shadow: 0 0 20px #ff0066} to {text-shadow: 0 0 50px #ff0066} }
+    table { width: 90%; max-width: 1100px; margin: 20px auto; font-size: 2.8rem; border-collapse: collapse; background: rgba(0,0,0,0.8); border-radius: 20px; overflow: hidden; }
+    th, td { padding: 20px; border: 4px solid gold; }
+    th { background: #1a001a; }
+    .d20 { background: #330033 !important; color: #ff0066; animation: pulse 1.5s infinite; font-size: 3.5rem !important; }
+    @keyframes pulse { 0%{transform: scale(1)} 50%{transform: scale(1.05)} 100%{transform: scale(1)} }
+    .footer { position: fixed; bottom: 20px; width: 100%; font-size: 2rem; color: #fff; }
+    .refresh { font-size: 1.5rem; color: #aaa; }
+    .error { color: red; font-size: 2rem; }
+  </style>
+</head>
+<body>
+  <h1>DICE OF DESTINY</h1>
+  <div class="live">LIVE LEADERBOARD – REFRESHES EVERY 20 SECONDS</div>
+
+<div style="background:rgba(0,0,0,0.93); margin:25px auto 15px; padding:22px; max-width:1100px; border:5px solid gold; border-radius:20px; font-size:2.8rem; line-height:1.4;">
+  <div style="color:#ff0066; font-size:4.5rem; animation:glow 2s infinite alternate;">
+    GAIN POINTS → ROLL BIGGER DICE
+  </div>
+  <div style="color:gold; font-size:3.4rem; margin:15px 0;">
+    EVERY SALE  
+    EVERY APP  
+    EVERY DOLLAR  
+    COUNTS
+  </div>
+  <div style="color:orange; font-size:4.2rem; animation:pulse 1.6s infinite; margin-top:15px;">
+    CLOSE 2 LIFE → ROLL THE d20<br>
+    $7,500 PREMIUM → ROLL THE d20<br>
+    1 LIFE + $6K → ROLL THE d20
+  </div>
+  <div style="color:#ff0066; font-size:4rem; margin-top:20px;">
+    GO GET LEGENDARY
+  </div>
+</div>
+
+  <table id="board">
+    <tr><th>RANK</th><th>PRODUCER</th><th>POINTS</th><th>DICE</th><th>STATUS</th></tr>
+    <tr><td colspan="5">Loading the carnage...</td></tr>
+  </table>
+
+  <div class="footer">
+    Draven • Dustin • Jon | Rolls Are DAILY!!! | <span id="refresh"></span>
+  </div>
+
+<script>
+// Your exact CSV link with CORS proxy to fix loading
+const PROXY_URL = "https://api.allorigins.win/raw?url=";
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ57AfNdEuHoXtEcBma4qU9G-vwOIyB-U4UJvqxRZ4FYTwjPLeAVRPprRoZPSGBaF9rbBrgmbBkcl_H/pub?output=csv";
+
+function loadLeaderboard() {
+  fetch(PROXY_URL + encodeURIComponent(SHEET_CSV_URL))
+    .then(r => r.text())
+    .then(text => {
+      const rows = text.split(/\r?\n/).slice(1); // skip header
+      let table = `<tr><th>RANK</th><th>PRODUCER</th><th>POINTS</th><th>DICE</th><th>STATUS</th></tr>`;
+      let rank = 1;
+
+      // Parse & sort by points descending
+      const data = rows.map(row => {
+        const c = row.split(",");
+        return {
+          name: c[0] || "",
+          points: parseFloat(c[10]) || 0,
+          dice: c[11] || "d4",
+          status: c[12] || "No"
+        };
+      }).filter(p => p.name).sort((a,b) => b.points - a.points);
+
+      data.forEach(p => {
+        const isD20 = p.status.includes("YES") || p.dice === "d20";
+        table += `<tr ${isD20 ? 'class="d20"' : ''}>
+          <td>${rank++}</td>
+          <td>${p.name}</td>
+          <td>${p.points.toLocaleString()}</td>
+          <td>${p.dice.toUpperCase()}</td>
+          <td>${isD20 ? 'GOD TIER UNLOCKED' : 'Keep Grinding'}</td>
+        </tr>`;
+      });
+
+      document.getElementById("board").innerHTML = table;
+      document.getElementById("refresh").textContent = "Updated: " + new Date().toLocaleTimeString();
+    })
+    .catch(err => {
+      document.getElementById("board").innerHTML = '<tr><td colspan="5" class="error">Fetch error (check console: F12). Proxy fixed CORS—try refresh.</td></tr>';
+      document.getElementById("refresh").textContent = "Error | " + new Date().toLocaleTimeString();
+      console.error("Load error:", err); // For debugging
+    });
+}
+
+loadLeaderboard();
+setInterval(loadLeaderboard, 20000); // refresh every 20 seconds
+</script>
+</body>
+</html>
